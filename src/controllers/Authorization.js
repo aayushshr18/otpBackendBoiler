@@ -2,15 +2,15 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../model/UserAuth");
 const nodemailer = require("nodemailer");
-const otpTemplate=require("../emailTemps/Otp");
+const otpTemplate = require("../emailTemps/Otp");
 
 const transporter = nodemailer.createTransport({
   host: "smtp.gmail.com",
   port: 465,
   secure: true,
   auth: {
-    user: "mail@ie.money",
-    pass: "qanjdzkktdeflpkh",
+    user: process.env.SENDER_EMAIL,
+    pass: process.env.APPS_PASSWORD,
   },
 });
 
@@ -18,45 +18,56 @@ function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000);
 }
 
-
 exports.registration = async (req, res) => {
   try {
-    const { email, password} = req.body;
-    if (!email || !password) {
+    const { email } = req.body;
+    const newEmail = email.toLowerCase();
+    const otp = generateOTP();
+    const timestamp = new Date();
+    timestamp.setMinutes(timestamp.getMinutes() + 3);
+
+    if (!email) {
       return res
         .status(400)
-        .json({ message: "Email and password are required", status: false });
+        .json({ message: "Email is required", status: false });
     }
 
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ email: newEmail });
     if (existingUser) {
       return res
         .status(409)
         .json({ message: "Email already exists", status: false });
     }
-    
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-    req.body.password = hashedPassword;
-    req.body.userName = randomUserName;
 
-    const newUser = new User(req.body);
-    const user = await newUser.save();
+    const newUser = new User({
+      ...req.body,
+      email: newEmail,
+      otp: otp,
+      otpExpiry: timestamp,
+    });
+    await newUser.save();
 
-    const payload = {
-      user: {
-        id: user._id,
-      },
+    const mailOptions = {
+      from: process.env.SENDER_EMAIL,
+      to: newEmail,
+      subject: `${otp} is your OTP for authentication on your Collings Denture account`,
+      html: otpTemplate(otp),
     };
-    const userToken = jwt.sign(payload, process.env.JWT_SECRET);
 
-    res.json({ status: true, userToken });
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        res.status(500).send(error.message);
+      } else {
+        res
+          .status(200)
+          .json({ success: true, message: "OTP Sent Successfully!" });
+      }
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Internal Server Error", status: false });
   }
 };
-
 
 exports.sendOtp = async (req, res) => {
   try {
@@ -76,7 +87,7 @@ exports.sendOtp = async (req, res) => {
     }
 
     const mailOptions = {
-      from: "mail@ie.money",
+      from: process.env.SENDER_EMAIL,
       to: newEmail,
       subject: `${otp} is your OTP for authentication on your Collings Denture account`,
       html: otpTemplate(otp),
@@ -129,8 +140,6 @@ exports.verifyOtp = async (req, res) => {
   } catch (error) {}
 };
 
-
-
 exports.loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -163,7 +172,9 @@ exports.loginUser = async (req, res) => {
 exports.userDetails = async (req, res) => {
   try {
     const userId = req.user.id;
-    const user = await User.findById(userId).select('-password -createdDate -__v');
+    const user = await User.findById(userId).select(
+      "-password -createdDate -__v"
+    );
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -177,12 +188,11 @@ exports.userDetails = async (req, res) => {
       status: false,
     });
   }
-
-}
+};
 
 exports.allUserDetails = async (req, res) => {
   try {
-    const users = await User.find()
+    const users = await User.find();
     res.json({
       status: true,
       data: users,
@@ -193,10 +203,7 @@ exports.allUserDetails = async (req, res) => {
       status: false,
     });
   }
-
-}
-
-
+};
 
 exports.updateUser = async (req, res) => {
   try {
@@ -224,7 +231,6 @@ exports.updateUser = async (req, res) => {
       data: updatedUser,
     });
   } catch (error) {
-
     res.status(500).json({
       message: error.message,
       status: false,
@@ -248,4 +254,3 @@ exports.deleteUser = async (req, res) => {
     res.send({ message: "500 Internal Error", status: false });
   }
 };
-
