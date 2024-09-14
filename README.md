@@ -1,4 +1,3 @@
-Here's a polished README based on the content you provided, enhanced for clarity and professionalism:
 
 ---
 
@@ -112,10 +111,5 @@ backendBoiler/
 
 Contributions are welcome! If you find a bug or have a feature request, feel free to open an issue or submit a pull request. We appreciate your feedback and help in improving this project.
 
-## License
-
-This project is licensed under the MIT License. See the `LICENSE` file for details.
 
 ---
-
-Let me know if you need any additional details or adjustments!
