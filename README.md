@@ -100,8 +100,6 @@ backendBoiler/
 ├── controllers/     # Contains API logic for various routes
 ├── models/          # MongoDB models (schemas)
 ├── routes/          # API route definitions
-├── services/        # Service functions such as email sending
-├── utils/           # Utility functions like error handling
 ├── .env.example     # Example environment configuration
 ├── server.js        # Entry point to start the server
 └── README.md        # Project documentation
