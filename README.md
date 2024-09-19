@@ -1,6 +1,3 @@
-
----
-
 # API Server Backend Setup
 
 ## Introduction
