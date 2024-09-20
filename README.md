@@ -106,5 +106,3 @@ backendBoiler/
 
 Contributions are welcome! If you find a bug or have a feature request, feel free to open an issue or submit a pull request. We appreciate your feedback and help in improving this project.
 
-
----
