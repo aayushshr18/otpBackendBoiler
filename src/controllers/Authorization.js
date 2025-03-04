@@ -50,7 +50,7 @@ exports.registration = async (req, res) => {
     const mailOptions = {
       from: process.env.SENDER_EMAIL,
       to: newEmail,
-      subject: `${otp} is your OTP for authentication on your Collings Denture account`,
+      subject: `Signin to ${process.env.COMPANY_NAME}`,
       html: otpTemplate(otp),
     };
 
@@ -89,7 +89,7 @@ exports.sendOtp = async (req, res) => {
     const mailOptions = {
       from: process.env.SENDER_EMAIL,
       to: newEmail,
-      subject: `${otp} is your OTP for authentication on your Collings Denture account`,
+      subject: `Signin to ${process.env.COMPANY_NAME}`,,
       html: otpTemplate(otp),
     };
 
