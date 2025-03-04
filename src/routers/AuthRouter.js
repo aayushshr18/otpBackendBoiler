@@ -4,7 +4,8 @@ const userAuth = require("../controllers/Authorization");
 
 
 authRouter.post("/signup",userAuth.registration);
-authRouter.post("/login",userAuth.loginUser);
+authRouter.post("/sendOtp",userAuth.sendOtp);
+authRouter.post("/verifyOtp",userAuth.verifyOtp);
 
 
 module.exports = authRouter;
