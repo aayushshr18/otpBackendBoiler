@@ -10,7 +10,7 @@ Ensure you have the following installed:
 
 - [Node.js](https://nodejs.org/) (v14 or above)
 - [npm](https://www.npmjs.com/) (Node Package Manager)
-- [MongoDB](https://www.mongodb.com/) installed locally or remotely
+- [MongoDB](https://www.mongodb.com/) installed locally or remotely...
 
 ## Installation
 
