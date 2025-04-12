@@ -116,6 +116,58 @@ exports.registrationWithPass = async (req, res) => {
   }
 };
 
+exports.registrationWithGoogle = async (req, res) => {
+  try {
+
+    const { token } = req.body;
+    if (!token) {
+      return res.status(400).json({ error: "Token is required" });
+    }
+
+    const ticket = await client.verifyIdToken({
+      idToken: token,
+      audience: process.env.GOOGLE_CLIENT_ID, 
+    });
+
+    const gPayload = ticket.getPayload();
+    const email = gPayload.email;
+
+    const existingUser = await User.findOne({ email: email });
+    if (existingUser) {
+      return res
+        .status(409)
+        .json({ message: "Email already exists", status: false });
+    }
+
+    const newUser = new User({
+      email,
+      fullName:gPayload.name,
+      displayPhoto:gPayload.photo
+    });
+
+    const user = await newUser.save();
+    const payload = {
+      user: {
+        id: user._id,
+      },
+    };
+
+    const userToken = jwt.sign(payload, process.env.JWT_SECRET);
+
+    res
+      .status(201)
+      .json({
+        message: "User registered successfully",
+        userToken,
+        status: true,
+      });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Internal Server Error", status: false });
+  }
+};
+
 exports.loginWithPass = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -153,6 +205,38 @@ exports.loginWithPass = async (req, res) => {
     res.status(500).json({ message: "Internal Server Error", status: false });
   }
 };
+
+exports.googleLogin = async (req, res) => {
+  try {
+    const { token } = req.body;
+    if (!token) {
+      return res.status(400).json({ error: "Token is required" });
+    }
+
+    const ticket = await client.verifyIdToken({
+      idToken: token,
+      audience: process.env.GOOGLE_CLIENT_ID, 
+    });
+
+    const gPayload = ticket.getPayload();
+    const email = gPayload.email;
+
+    const user = await User.findOne({ email });
+
+    const payload = {
+      user: {
+        id: user._id,
+      },
+    };
+
+    const userToken = jwt.sign(payload, process.env.JWT_SECRET);
+    res.status(200).json({ status: true, userToken });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 
 exports.requestPasswordReset = async (req, res) => {
   try {
