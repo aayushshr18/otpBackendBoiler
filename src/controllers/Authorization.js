@@ -69,6 +69,134 @@ exports.registration = async (req, res) => {
   }
 };
 
+exports.registrationWithPass = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const newEmail = email.toLowerCase();
+
+    if (!email || !password) {
+      return res
+        .status(400)
+        .json({ message: "Email and Password are required", status: false });
+    }
+
+    const existingUser = await User.findOne({ email: newEmail });
+    if (existingUser) {
+      return res
+        .status(409)
+        .json({ message: "Email already exists", status: false });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = new User({
+      ...req.body,
+      email: newEmail,
+      password: hashedPassword,
+    });
+
+    const user = await newUser.save();
+    const payload = {
+      user: {
+        id: user._id,
+      },
+    };
+
+    const userToken = jwt.sign(payload, process.env.JWT_SECRET);
+
+    res
+      .status(201)
+      .json({
+        message: "User registered successfully",
+        userToken,
+        status: true,
+      });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Internal Server Error", status: false });
+  }
+};
+
+exports.loginWithPass = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res
+        .status(400)
+        .json({ message: "Email and Password are required", status: false });
+    }
+
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) {
+      return res.status(404).json({ message: "User not found", status: false });
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return res
+        .status(401)
+        .json({ message: "Invalid credentials", status: false });
+    }
+
+    const payload = {
+      user: {
+        id: user._id,
+      },
+    };
+
+    const userToken = jwt.sign(payload, process.env.JWT_SECRET);
+
+    res
+      .status(200)
+      .json({ message: "Login successful", status: true, userToken });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Internal Server Error", status: false });
+  }
+};
+
+exports.requestPasswordReset = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res
+        .status(400)
+        .json({ message: "Email is required", status: false });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res
+        .status(404)
+        .json({ message: "User with this email does not exist", status: false });
+    }
+
+    const resetToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "1h",
+    });
+
+    const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
+
+    const mailOptions = {
+      from: process.env.SENDER_EMAIL,
+      to: email,
+      subject: "Password Reset Request",
+      text: `You requested a password reset. Please click on the following link to reset your password:\n\n${resetLink}\n\nThe link will expire in 1 hour.`,
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    res.status(200).json({
+      message: "Password reset email sent. Check your inbox.",
+      status: true,
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Internal Server Error", status: false });
+  }
+};
+
 exports.sendOtp = async (req, res) => {
   try {
     const { email } = req.body;
@@ -89,7 +217,7 @@ exports.sendOtp = async (req, res) => {
     const mailOptions = {
       from: process.env.SENDER_EMAIL,
       to: newEmail,
-      subject: `Signin to ${process.env.COMPANY_NAME}`,,
+      subject: `Signin to ${process.env.COMPANY_NAME}`,
       html: otpTemplate(otp),
     };
 
